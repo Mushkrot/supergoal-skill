@@ -1,123 +1,393 @@
 ---
 name: supergoal
-description: Use for "fix this bug", "add/build/plan/spec this feature", "prototype this", "QA / verify", "code review", "improve architecture", "teach/explain", "learn codebase", "make skill", or "eval a harness".
+description: Plan and autonomously execute a software task end-to-end in Codex. Use only when the user explicitly invokes `/supergoal` or clearly asks for autonomous delivery such as "plan and ship", "do not stop until done", "I do not want to babysit this", or an equivalent request. Reconcile stale native Goals, inspect the repo, preserve every requirement, repair plan and pre-flight defects without reducing scope or quality, dispatch through native `create_goal`, execute all Worksteps, recover from failures, run the final audit and closeout gates, then close the native Goal. Use Codex `/goal` only as an emergency fallback when native Goal dispatch is unavailable.
 ---
 
-# About
+# Supergoal
 
-One objective -> smallest correct change -> verified against ground truth. If invoked, run this skill's
-contract instead of downgrading to an inline shortcut. `SKILL.md` is the router; `reference/` carries procedure.
-Unless explicitly invoked, pure brainstorming and user-driven step-by-step work use normal direct collaboration.
+Execute the user's task autonomously from request to verified result.
 
-**Standing rules (read first, every mode).** Before classifying the mode, read
-`.supergoal/rules/RULES.md` if present. Honor it across phases as top-priority preference, but rules never
-weaken safety gates. Create/edit it only when the user explicitly asks (`reference/rules.md`).
+The task is:
 
-## Core principles
+`$ARGUMENTS`
 
-- Ground truth beats proxy: re-run REAL tests, re-read request/docs, and do not optimize to self-grading.
-- Exact proof beats review; implementation is delegated to a builder subagent.
-- Smallest correct change; match surrounding code. Scope-minimalism governs code surface area, not UI
-  quality: polished user-facing UI is baseline correctness.
-- GREENFIELD / DEBUG / LEGACY code changes use Before/After Eval before Build: prove before, target after, and delta with trusted commands (`reference/delivery-gate.md`).
-- Ask only when genuinely ambiguous; resolve code-answerable questions by reading the code.
-- Docs language: for persistent repo docs (`docs/**`, run vaults, `.domain-agent/**`, ADR/spec/changelog), match the target repo's dominant prose language; mixed/none -> the user's language. Keep identifiers, paths, commands, and machine-checked anchors in canonical English so checks keep matching.
-- Hard stops: a destructive or irreversible step (drop data, force-push, external publish) needs explicit consent; if the real tests cannot pass, report it - never fake a pass.
+Use the native Codex Goal lifecycle in the current task. Do not ask for plan approval or a separate launch confirmation, and do not require the user to paste a slash command on the normal path.
 
-## Run isolation (GREENFIELD / DEBUG / LEGACY that edits code)
+## Non-negotiable result contract
 
-After mode detection, resolve the source/base branch and target/integration branch (repo policy, else
-ask). Verify both refs before mutating files, then create a run worktree from the source/base branch. Do
-all code work there. Do not mutate the original checkout. Commit or merge only into the verified
-target/integration branch after verification and user acceptance. Commit is hard-gated by the Commit gate
-(`reference/delivery-gate.md`, backstop `templates/commit-gate.sh`): non-green means fix/ask, never commit
-on assumption. Full contract: `reference/role-loop.md`.
+Translate the request into measurable requirements and preserve all of them through planning and recovery:
 
-## Mode (classify, state it in one line)
+- **Functional:** golden path and obvious edge cases work.
+- **Engineering:** build, typecheck, tests, and relevant lint checks pass, or pre-existing lint debt is baseline-proven and not worsened.
+- **Polish:** applicable loading, empty, error, unauthorized, copy, and responsive states are handled.
+- **Hardening:** input validation, security, accessibility, performance, and regression surfaces are reviewed where relevant.
+- **Verification:** every requirement maps to a Workstep criterion and final verification evidence.
 
-| Signal in the objective | Mode | Route |
-|---|---|---|
-| build / make / ship a new app/tool | GREENFIELD | default loop; broad/foggy builds first use a `wayfinder/` Frontier Map inside the run vault, then deliver one selected frontier ticket |
-| fix / broken / failing / crash / why does | DEBUG | default loop; observe live symptom, then failing-test repro (`reference/debugging.md`, driver persona `agents/debugger.md`); web: `reference/qa.md`, `reference/agent-browser.md` |
-| add / integrate / refactor existing code | LEGACY | default loop; map first (`agents/explore.md`, `reference/domain-context.md`); optional DB evidence (`reference/db-access.md`); existing API: capture its exact behavior first as a preserve-baseline; shared code/state changes: characterization baseline (`reference/qa.md`) |
-| spec / requirements first / break down / tickets / roadmap / big vague effort / frontier / what should we do first | WAYFINDER | map the destination, optional ticket-depth requirements, ticket graph, blockers, and next frontier; no product code by default (`reference/wayfinder.md`) |
-| prototype / spike / try variants / prove approach before build | PROTOTYPE | throwaway proof that answers one question, then delete/quarantine or route to delivery (`reference/prototype.md`) |
-| explain / teach / how does X work (no code) | TEACH | stateful `teach/<topic>/` workspace (`reference/teach.md`); use an Archify diagram by default for structure/flow; lessons must pass `node templates/teach-lesson-gate.mjs` |
-| learn / onboard / map this codebase (persist a wiki) | LEARN-DOMAIN | Survey -> Map -> Ground -> Onboard a `.domain-agent/` wiki (`reference/learn-domain.md`; gate `learn-grounding-gate.mjs`) |
-| QA / verify / 검증만 / compare data (no code) | QA-ONLY | Impact Matrix QA (`reference/qa-only.md`; gate `templates/qa-only-gate.sh`) |
-| review / audit this code/diff/PR (no fixes) | REVIEW-ONLY | `reference/review-only.md` |
-| improve the architecture / find refactoring opportunities / 구조 개선 / draw · diagram · 그려 (arch·flow·sequence·state) | ARCHITECTURE | draw-only ask: render self-contained HTML via `reference/archify.md`, deliver the `.html`, stop. Else friction survey -> candidates -> grill the pick -> route to LEGACY/WAYFINDER (`reference/arch.md`) |
-| test harness/skill effectiveness / with vs without / does the skill help / measure skill lift | HARNESS-EVAL | `reference/harness-eval.md` |
-| turn repeated work into a reusable skill | SKILL-MINE | `reference/skill-mine.md` |
+Never clear a red flag by dropping scope, weakening tests, bypassing security, skipping accessibility, or redefining the requested outcome.
 
-The no-code/utility/planning modes - **QA-ONLY**, REVIEW-ONLY, ARCHITECTURE, WAYFINDER, PROTOTYPE, TEACH,
-LEARN-DOMAIN, HARNESS-EVAL, SKILL-MINE - write no product code by default and confirm before installing
-anything. PROTOTYPE may write throwaway sandbox code; it cannot ship until routed back through delivery.
+## Native Goal authorization gate
 
-**UI/UX overlay (any mode shipping user-facing UI).** Load `reference/ui-ux.md` at Frame; apply the
-Expressive/polished baseline by default (`reference/taste-skill-v2.md` is the authority for ALL
-user-facing UI), through Build and Verify. GREENFIELD frontend: always; LEGACY: only new UI (else reuse
-the existing design system); non-visual work (lib, API, backend, CLI): skip.
+Call `create_goal` only when this skill was explicitly invoked or the user explicitly requested autonomous end-to-end execution. Skill auto-discovery for an ordinary coding request is not authorization to create a persistent Goal.
 
-**Board overlay (optional).** If the live dashboard is enabled, the conductor calls `sg-emit` at each
-phase transition; it observes only, never gates (`reference/observability.md`).
+Do not pass `token_budget` unless the user explicitly requested one.
 
-## Default loop (GREENFIELD / DEBUG / LEGACY) - five gates, fresh context per gate
+## State machine
 
-Load and follow `reference/role-loop.md`; it is the sole detailed authority for run setup, vault
-lifecycle, role inputs/outputs, retries, verification, and finalization. Invoking `supergoal` for these
-modes is explicit authorization to use its fresh-context subagents; ask again only for normal safety or
-permission gates. Red-green evidence is required, plus DB evidence when persisted data is load-bearing.
+Persist the current state in the run's `STATE.md`:
 
-Mandatory core: Frame -> Plan approval -> Build -> Exact Verify/QA -> Finalize. Use one builder + one
-auditor verifier per iteration; browser/CLI proof adds one evidence-only qa-tester before the auditor.
-Only a named, recorded escalation trigger permits the conditional plan attack. Frame writes `GOAL.md`
-first and freezes a self-sufficient `PLAN.md`; Build starts only after approval and runs in a separate
-fresh-context builder from that plan; `qa-tester` captures the promised browser/CLI evidence, then a
-fresh adversarial verifier (`qa-auditor`) reruns REAL tests, audits the promised E2E/live/API/browser
-proof, and owns the final verdict, GOAL ticks, and R-LOOP.
-Finalize requires every criterion green, the completion marker, user acceptance, and the commit gate.
-Exact verification outranks review.
+```text
+REQUESTED
+→ RECONCILING_EXISTING_GOAL
+→ PLANNING
+→ REPAIRING_PLAN
+→ PREFLIGHT
+→ CREATING_GOAL
+→ EXECUTING
+→ FINAL_AUDIT
+→ CLOSING_OUT
+→ COMPLETE
+```
 
-Roles -> personas: builder/improver=`agents/executor.md`, evidence-only browser/CLI tester=
-`agents/qa-tester.md`, final verifier for every default-loop path=`agents/qa-auditor.md`, escalation
-reviewer=`agents/code-reviewer.md`, security=`agents/security-reviewer.md` (others in
-`agents/<role>.md`).
+Exceptional terminal states:
 
-## Reference map (load only what the current phase needs)
+- `FALLBACK_READY`: native Goal dispatch is unavailable and a Codex `/goal` fallback is prepared.
+- `GENUINELY_BLOCKED`: evidence proves that no safe authorized path remains.
+- `PAUSED_BY_USER`: the user explicitly asked to pause or stop.
 
-| Read this | When |
-|---|---|
-| `reference/role-loop.md` | default loop + run isolation contract |
-| `agents/<role>.md` | dispatch a role persona |
-| `reference/domain-rules.md` | Frame: distill <=10 priority rules |
-| `reference/rules.md` | read project standing rules (`.supergoal/rules/RULES.md`) first, before any mode |
-| `reference/domain-context.md` | repo-local Domain Brief |
-| `reference/debugging.md` | DEBUG: hypothesis-ledger diagnose loop |
-| `reference/interview.md` | interview: ambiguity (what) + blast-radius confirm (approach, tiered) |
-| `reference/delivery-gate.md`, `templates/GOAL.md`, `templates/PLAN.md`, `templates/QA.md`, `templates/R-LOOP.md`, `templates/Z-DONE.md`, `templates/run-state.json`, `templates/commit-gate.sh` | run vault file set + Before/After Eval + resumable run state + commit gate for GREENFIELD / DEBUG / LEGACY code changes |
-| `reference/wayfinder.md` | WAYFINDER: issue map -> vertical tickets -> optional EARS/user-story depth -> blockers -> next frontier; also GREENFIELD internal Frontier Map for broad/foggy new builds |
-| `reference/research.md` | WAYFINDER research-needed tickets; docs/API/source facts that need high-trust cited evidence |
-| `reference/prototype.md` | PROTOTYPE: throwaway logic/UI proof -> capture answer -> delete/quarantine or route to delivery; UI/interaction prototypes must also load the installed `superdesign` skill |
-| `reference/vercel-host.md` | PROTOTYPE: after explicit approval, publish an isolated browser prototype to a public Vercel URL and verify anonymous access |
-| `reference/plan-grounding.md` | ground the approach before committing |
-| `reference/db-access.md`, `templates/db-access/` | read-only DB evidence (required when persisted data is load-bearing) |
-| `reference/qa.md`, `qa-only.md`, `agent-browser.md`, `playwright-cli.md` | QA / no-code verify; agent-browser default, playwright-cli fallback |
-| `reference/review-only.md` | REVIEW-ONLY: findings, no fixes |
-| `reference/arch.md` | ARCHITECTURE: friction survey -> route out |
-| `reference/archify.md`, `templates/archify/` | diagrams as self-contained HTML (typed JSON IR -> validated render): ARCHITECTURE reports, TEACH lessons, and LEARN-DOMAIN onboarding |
-| `reference/teach.md`, `learn-domain.md` | teach a human / onboard the agent |
-| `reference/ui-ux.md`, `taste-skill-v2.md`, `functional-ui.md`, `taste-aesthetics.md`, `engagement.md` | user-facing UI tier |
-| `reference/harness-eval.md`, `templates/harness-eval-runner.mjs`, `templates/harness-eval-external/deepswe/run-default-suite.mjs` | HARNESS-EVAL; the runner is the DEFAULT portable eval driver (adapters + preflight + fallback + retry, serial by default). Difficult SWE/harness-effectiveness claims default to the forced five-task DeepSWE suite (measured-difficult tasks) - use it, don't hand-roll a single-CLI run.mjs |
-| `reference/skill-mine.md` | SKILL-MINE |
-| `reference/market-research.md` | GREENFIELD: validate demand (optional) |
-| `reference/observability.md`, `tui/` | Board: opt-in live dashboard |
+Do not infer completion or blockage from one stale status field. Use artifacts and repository evidence.
 
-**Done =** mode stated; smallest diff; Before/After Eval complete for code-mode changes; REAL
-tests + request/docs green (not proxy); runtime MUST proven by real behavior; code-mode runs use
-red-green test + DB evidence if data load-bearing; neighbor snapshots re-run with unnamed drift resolved; every
-`GOAL.md` Success Criterion checked, with no orphan scope; `Z-<date>.md` written with run branch +
-completion timestamp; DEBUG prod issue has reproduction fidelity and, if
-non-exact, residual risk + post-deploy confirmation plan; user-facing UI at the Expressive baseline;
-destructive steps consented; commit/merge only after the commit gate passes (`reference/delivery-gate.md`);
-verified commands reported.
+## Locate the skill and run roots
+
+```bash
+SUPERGOAL_DIR=$(dirname "$(ls -1 \
+  "$HOME/.codex/skills/supergoal/SKILL.md" \
+  "$PWD/.codex/skills/supergoal/SKILL.md" \
+  2>/dev/null | head -n1)")
+export SUPERGOAL_DIR
+export SUPERGOAL_BASE="${SUPERGOAL_BASE:-.supergoal}"
+mkdir -p "$SUPERGOAL_BASE"
+```
+
+Each run receives a namespaced `$SUPERGOAL_ROOT` under `$SUPERGOAL_BASE`. Keep compatibility anchors unchanged: `SUPERGOAL_PHASE_*`, `PHASE_POSITION`, `phases/phase-N.md`, `phase-position.md`, and `Current phase`. In human-facing text, call internal slices **Worksteps** and reserve **Project Phase** for phases from an external project roadmap.
+
+## Stage 0 — Reconcile native and local state
+
+Set runtime lifecycle state to `RECONCILING_EXISTING_GOAL` before planning. Before a fresh run root exists, persist reconciliation under `$SUPERGOAL_BASE/reconciliations/<timestamp>-<slug>.md`; do not rewrite an old completed run merely to record that inspection. After a new run is claimed, copy the reconciliation result into its `STATE.md`. When an associated old run is safely closed or resumed, add only a link to the reconciliation record in that run's append-only notable events.
+
+### 0.1 Inspect the native Goal first
+
+Call `get_goal`.
+
+- If no Goal exists, continue to local-run inspection.
+- If a Goal exists, do not treat its nonterminal status as proof of unfinished work. Reconcile it before creating or dispatching anything new.
+
+### 0.2 Associate the Goal with a Supergoal run
+
+New native Goal objectives must contain:
+
+```text
+Supergoal run root: <run-root>
+```
+
+For a legacy Goal without that line, locate the best matching run using its objective, run title, `STATE.md`, `ROADMAP.md`, current Workstep, final checkpoints, and repository changes. Do not guess when two candidates remain equally plausible; continue evidence collection first.
+
+### 0.3 Audit the associated run
+
+Run:
+
+```bash
+bash "$SUPERGOAL_DIR/scripts/audit-run-state.sh" <run-root>
+```
+
+Read the generated evidence together with:
+
+- `STATE.md` and `ROADMAP.md`;
+- Workstep completion and deliverables;
+- `requirement-contract.md` coverage;
+- mandatory command and final-audit evidence;
+- `deferred-work.md` resolution;
+- documentation trace;
+- auto-commit result or valid skip reason;
+- Recallant closeout result or valid skip reason;
+- handoff/failure markers;
+- current repository state.
+
+The script is evidence, not the final decision. Independently verify any uncertain objective-specific result.
+
+### 0.4 Classify and act
+
+Write the decision using `templates/goal-reconciliation.md` at the reconciliation-ledger path above. Keep each inspection as a separate file so concurrent or repeated launches cannot overwrite evidence.
+
+#### `STALE_COMPLETE`
+
+Use only when required work is verifiably complete and all completion gates are satisfied or can be safely reconstructed.
+
+1. Record the evidence and remaining stale field.
+2. Call `update_goal({status: "complete"})`.
+3. Call `get_goal` again.
+4. Continue the incoming request after terminal state is confirmed.
+
+Do not delete run artifacts. Marking a verified completed Goal complete is the safe repair.
+
+#### `RECOVERABLE_INCOMPLETE`
+
+Use when unfinished work is identifiable and safely executable.
+
+1. Preserve the incoming request under `$SUPERGOAL_BASE/pending-launch/`.
+2. Resume the old run at its first incomplete Workstep or checkpoint.
+3. Finish and audit the old run without narrowing its objective.
+4. Close it with `update_goal({status: "complete"})`.
+5. Automatically resume the preserved incoming request.
+
+#### `INDETERMINATE`
+
+Use when evidence is insufficient. Inspect the objective, repository, tests, deliverables, and nearby run artifacts again. Do not close the Goal merely because stale Goals are common. Convert to another classification only when evidence supports it.
+
+#### `GENUINELY_BLOCKED`
+
+Use only when required work remains and no safe authorized solution survives the recovery ladder. Preserve exact evidence. Call `update_goal({status: "blocked"})` only after the same blocking condition has recurred for at least three consecutive Goal turns, as required by Codex. Otherwise leave the Goal active and continue meaningful recovery.
+
+### 0.5 Reconcile local run artifacts
+
+Scan `$SUPERGOAL_BASE/*/STATE.md` and the legacy `$SUPERGOAL_BASE/STATE.md`.
+
+- Resume a matching recoverable run.
+- Treat completed evidence with a stale local status as a local reconciliation, not a blocker.
+- Keep unrelated run artifacts isolated.
+- Do not run two autonomous source-editing executions in one working tree. Use a separate git worktree when real concurrent execution is detected.
+
+Preload unresolved scope from `$SUPERGOAL_BASE/PENDING_WORK.md`, matching active/recent run ledgers at `$SUPERGOAL_BASE/*/deferred-work.md`, and the selected run's `deferred-work.md`. Import only items that plausibly apply to the incoming task, record their source and reason in `applied-pending-work.md`, and keep the cross-run ledger synchronized when a run finishes or genuinely blocks. Never rely on the user to remember deferred scope.
+
+For a fresh run:
+
+```bash
+SUPERGOAL_ROOT="$(bash "$SUPERGOAL_DIR/scripts/claim-run.sh" "$ARGUMENTS")"
+export SUPERGOAL_ROOT
+```
+
+## Stage 1 — Autonomous intake
+
+Set lifecycle state to `PLANNING`.
+
+Infer defaults in this order:
+
+1. Explicit user request and attached artifacts.
+2. Repository conventions, tests, docs, and current architecture.
+3. Applicable memory and prior durable decisions exposed by Codex.
+4. Existing project patterns and compatibility requirements.
+5. Current primary documentation or research when facts may have changed.
+6. The safest reversible professional default.
+
+Record assumptions in `ROADMAP.md`; do not request approval for them. Ask the user only when execution is impossible without unavailable credentials, a required irreversible external action lacks authority, explicit requirements remain logically incompatible after redesign, or Codex/system policy requires user action.
+
+For Project Phase-targeted requests, locate the source plan, preserve Project Phase `N of M`, and create `phase-position.md`. If the source plan cannot be found, search the repo and attached artifacts before treating the missing source as a genuine blocker.
+
+## Stage 2 — Recon
+
+Run the appropriate scripts and save their output under `$SUPERGOAL_ROOT`:
+
+```bash
+# Existing repository
+bash "$SUPERGOAL_DIR/scripts/detect-stack.sh" > "$SUPERGOAL_ROOT/context.md"
+bash "$SUPERGOAL_DIR/scripts/summarize-repo.sh" > "$SUPERGOAL_ROOT/repo-map.md"
+
+# Greenfield environment
+bash "$SUPERGOAL_DIR/scripts/detect-env.sh" > "$SUPERGOAL_ROOT/context.md"
+```
+
+Inspect the actual source of truth. Preserve unrelated dirty work. Detect available tools and relevant skills from the current Codex session without assuming specific MCP names. Record capabilities in `tools.md`.
+
+Detect Recallant using project-specific evidence only. Do not attach, onboard, or connect a project merely to satisfy closeout. Preserve the existing verified/unknown/unavailable closeout behavior in `recallant-status.md`.
+
+## Stage 3 — Requirement contract and deep think
+
+Create `$SUPERGOAL_ROOT/requirement-contract.md` from `templates/requirement-contract.md` before Workstep decomposition.
+
+Assign stable IDs `REQ-001`, `REQ-002`, and so on to every explicit requirement, preserved compatibility promise, required quality gate, and imported pending item. For each requirement record:
+
+- source;
+- exact intent;
+- non-degradation invariant;
+- planned Workstep and acceptance criterion IDs;
+- final verification;
+- status.
+
+Write `THINKING.md` with goals, constraints, top three risks, dependency ordering, applicable memory, pending work, documentation plan, Recallant plan, and current best practices. Keep it concise.
+
+## Stage 4 — Decompose into Worksteps
+
+Derive the number of Worksteps from independently verifiable units; do not impose a fixed count.
+
+- Give every Workstep measurable deliverables, acceptance criteria, commands, evidence, dependencies, and covered requirement IDs.
+- Use stable criterion IDs such as `AC-2.1`.
+- Add an early safety-net Workstep when changing weakly tested brownfield behavior.
+- Add visual verification for UI work.
+- Make the final Workstep `Polish & Harden`, including documentation trace, regression, security, accessibility, performance, and diff review where applicable.
+
+Read `references/phase-design.md` and `references/planning-depth.md` for the quality bar.
+
+## Stage 5 — Write run artifacts
+
+Create:
+
+- `ROADMAP.md` from `templates/ROADMAP.md`;
+- `STATE.md` from `templates/STATE.md`;
+- `requirement-contract.md`;
+- `deferred-work.md`;
+- `documentation-trace.md`;
+- `recallant-status.md`;
+- optional `phase-position.md`;
+- one `phases/phase-N.md` per Workstep from `templates/phase-goal.txt`.
+
+Validate every Workstep spec:
+
+```bash
+bash "$SUPERGOAL_DIR/scripts/validate-phase.sh" "$SUPERGOAL_ROOT/phases/phase-N.md"
+```
+
+Never silently drop imported pending work. Resolve it in a Workstep, retain a concrete unlock condition and target Workstep, or classify it as a genuine blocker. `out-of-scope` requires an explicit user exclusion, not an agent convenience.
+
+## Stage 5.5 — Progress-aware plan repair
+
+Set lifecycle state to `REPAIRING_PLAN` and build `plan-integrity.md`.
+
+Check artifact creation/use order, command prerequisites, migrations, dependency edges, requirement coverage, deferred items, documentation, Recallant, destructive steps, incompatible criteria, and independently verifiable Workstep boundaries.
+
+Use this repair ladder without reducing scope or quality:
+
+1. Reclassify a premature command.
+2. Move a criterion or action to the first valid Workstep.
+3. Move or add a narrow prerequisite earlier.
+4. Split a mixed Workstep.
+5. Merge Worksteps that cannot verify independently.
+6. Resequence dependencies and compatibility filenames.
+7. Add a foundation Workstep.
+8. Choose a scope-preserving alternative design.
+9. Rebuild the plan from `requirement-contract.md`.
+
+After each repair:
+
+1. Rebuild the plan graph.
+2. Revalidate every affected Workstep.
+3. Verify 100% requirement coverage.
+4. Compare the new integrity fingerprint with the prior round.
+
+Continue while the flag set or severity improves. If the same unresolved fingerprint repeats, escalate to the next repair level. After the full-plan rebuild, classify a remaining issue as a genuine blocker only when no safe authorized scope-preserving solution exists. Do not turn a mechanical planning defect into a user question.
+
+For lint, preserve the pre-edit baseline and prove that run-touched files add no new errors. Never report a red baseline as green.
+
+## Stage 6 — Informational summary and pre-flight
+
+Print a compact summary of Worksteps, assumptions chosen, requirements covered, repairs made, risks, deferred work, and artifacts. Then print:
+
+```text
+AUTO_ADVANCE_TO_PREFLIGHT
+No user decision required; running pre-flight now.
+```
+
+Do not pause after the summary.
+
+Set lifecycle state to `PREFLIGHT`. Run only deduplicated `baseline-safe` commands. Classify future-artifact commands as `requires-phase-N` and credential/external commands as `external/env`.
+
+For a red command:
+
+- fix a misclassification;
+- assign a broken baseline to the Workstep that repairs it;
+- add/reorder a foundation Workstep;
+- redesign the plan without weakening verification;
+- rerun Stage 5.5 and pre-flight.
+
+Never offer to skip a meaningful red pre-flight check. Stop only on a genuine blocker or required platform permission.
+
+## Stage 7 — Native Goal dispatch
+
+After pre-flight is acceptable:
+
+1. Capture `Baseline ref` and `baseline-status.txt`.
+2. Render `PROTOCOL.md` with the literal run root.
+3. Copy `repo-state.sh` and `references/goal-format.md` into the run root as `repo-state.sh` and `GOAL_FORMAT.md`.
+4. Revalidate every Workstep spec and requirement mapping.
+5. Set lifecycle state to `CREATING_GOAL`.
+6. Build a compact objective containing:
+   - `Supergoal run root: <run-root>`;
+   - instructions to read `ROADMAP.md`, `requirement-contract.md`, and `PROTOCOL.md`;
+   - all-Workstep execution and autonomous scope-preserving recovery;
+   - final audit, documentation, auto-commit, Recallant, and optional Project Phase gates;
+   - no unresolved required deferred work or handoff marker;
+   - native Goal closeout after verified completion.
+7. Call `create_goal({objective: <objective>})` without `token_budget` unless explicitly requested.
+
+On success, write `Goal dispatch method: native`, set lifecycle state to `EXECUTING`, and begin Workstep 1 immediately in the same task. Do not stop after creating the Goal.
+
+### Dispatch failure routing
+
+- If `create_goal` reports an unfinished Goal, return to Stage 0, reconcile it, and retry native creation once.
+- If `create_goal` is absent, route directly to fallback. If it is callable but fails technically, retry once; after the retry fails and `get_goal` still confirms no active Goal, set `FALLBACK_READY`, record `Goal dispatch method: slash-fallback`, and emit the exact Codex `/goal` objective from `references/goal-format.md`.
+- If a ghost Goal remains after evidence-based reconciliation and cannot be closed natively, emit `/goal clear` followed by the prepared `/goal` command as an emergency manual sequence. Do not claim execution started.
+
+## Execution, audit, and closeout
+
+Follow the rendered `PROTOCOL.md` for Workstep execution, requirement checks, deferred work, memory writeback, documentation, final audit, auto-commit, Recallant closeout, Project Phase footer, and recovery. Use `references/goal-format.md` for transcript blocks.
+
+When the user voluntarily sends a change during execution, incorporate it at the next safe Workstep boundary, update the requirement contract and affected specs, re-run integrity checks, and continue automatically. Pause only when the user explicitly asks to pause or stop.
+
+After all completion gates pass:
+
+1. Set lifecycle state to `CLOSING_OUT`.
+2. Persist final audit, commit/skip, documentation, Recallant, deferred-work, and last-checkpoint evidence in `STATE.md`.
+3. Set run status to `COMPLETE`.
+4. Print `SUPERGOAL_RUN_COMPLETE`.
+5. Call `update_goal({status: "complete"})`.
+6. Record the native closeout result in `STATE.md` when filesystem work remains possible; otherwise ensure the transcript contains it.
+
+If native closeout fails after work is complete, preserve enough checkpoint evidence for the next run to classify it as `STALE_COMPLETE`.
+
+## Recovery ladder
+
+Do not equate three command attempts with a genuine blocker. For a failing criterion or audit gap:
+
+1. Diagnose the root cause and record evidence.
+2. Retry after a mechanical fix.
+3. Try an independent technical approach.
+4. Write and execute a focused fix spec.
+5. Rebuild the current Workstep.
+6. Replan dependent Worksteps.
+7. Perform a full scope-preserving redesign from the requirement contract.
+8. Re-run affected verification and the final audit.
+
+Classify the failure as command-specific, approach-specific, environment-specific, authority-specific, or logically impossible. Use `GENUINELY_BLOCKED` only after the applicable ladder is exhausted and no meaningful progress remains. Respect Codex's three-consecutive-Goal-turn requirement before calling `update_goal({status: "blocked"})`.
+
+## Operating principles
+
+- Normal path: zero approval prompts and zero manual slash-command pastes.
+- Status is a hint; artifacts and repository evidence determine truth.
+- Explicit requirements are invariants, not negotiable planner inputs.
+- Prefer reversible, compatibility-preserving changes.
+- Preserve unrelated dirty work and never commit it accidentally.
+- Keep runtime artifacts out of product commits unless explicitly deliverable.
+- Use current tools opportunistically; never hard-require an optional MCP.
+- Keep local memory writeback separate from canonical Recallant closeout.
+- Never claim success while required deferred work, a failed criterion, or a handoff marker remains.
+
+## References
+
+- `references/planning-depth.md`: planning quality and research guidance.
+- `references/phase-design.md`: Workstep slicing and dependency rules.
+- `references/goal-format.md`: native Goal lifecycle, fallback objective, and transcript blocks.
+- `references/repo-state-comparison.md`: complete working-tree comparison strategy.
+
+## Scripts
+
+- `scripts/claim-run.sh`: atomically claim a run namespace.
+- `scripts/detect-stack.sh`: detect brownfield stack and commands.
+- `scripts/detect-env.sh`: inspect a greenfield environment.
+- `scripts/summarize-repo.sh`: produce a compact repo map.
+- `scripts/repo-state.sh`: compare complete working-tree state against baseline.
+- `scripts/validate-phase.sh`: validate Workstep structure and requirement mappings.
+- `scripts/audit-run-state.sh`: gather deterministic stale-Goal reconciliation evidence.
+
+## Templates
+
+- `templates/STATE.md`, `ROADMAP.md`, `phase-goal.txt`, and `PROTOCOL.md`.
+- `templates/requirement-contract.md` and `goal-reconciliation.md`.
+- `templates/documentation-trace.md`, `recallant-status.md`, `recallant-closeout.md`, and `phase-position.md`.
