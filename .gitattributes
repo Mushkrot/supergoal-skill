@@ -1,12 +1,8 @@
-# Shell scripts and Node gates must stay LF so bash on Windows (Git Bash/WSL)
-# can parse them. CRLF here breaks parsing with `$'\r': command not found`.
+# Shell scripts must stay LF so bash on Windows (Git Bash/WSL) can parse them.
 *.sh   text eol=lf
-*.mjs  text eol=lf
-*.js   text eol=lf
 
-# Docs and config: normalize to LF in the repo for cross-platform consistency.
+# Documentation and configuration use LF for cross-platform consistency.
 *.md   text eol=lf
+*.txt  text eol=lf
+*.yaml text eol=lf
 *.json text eol=lf
-
-# Binary assets: never touch.
-*.png  binary

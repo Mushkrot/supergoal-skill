@@ -1,0 +1,6 @@
+interface:
+  display_name: "Supergoal"
+  short_description: "Autonomous Codex planning and delivery"
+  default_prompt: "Use $supergoal to plan, execute, verify, and finish this software task autonomously."
+policy:
+  allow_implicit_invocation: true

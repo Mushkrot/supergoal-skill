@@ -1,0 +1,60 @@
+# Workstep spec template — write to {{RUN_ROOT}}/phases/phase-N.md
+# Keep compatibility markers and substitute every {{...}} placeholder.
+
+SUPERGOAL_PHASE_START
+Workstep: {{N}} of {{TOTAL}} — {{WORKSTEP_NAME}}
+Task: {{ONE_LINE_TASK}}
+Type: {{TAGS}}
+Requirements: {{REQUIREMENT_IDS}}
+Mandatory commands: {{COMMANDS_CSV}}
+Acceptance criteria: {{CRIT_COUNT}}
+Evidence required: {{EVIDENCE_CSV}}
+Depends on worksteps: {{DEPS}}
+Deferred items targeted here: {{DEFERRED_ITEMS_OR_NONE}}
+
+## Why
+
+{{WHY_ONE_SENTENCE}}
+
+## Requirements covered
+
+- {{REQ_ID_1}} — {{REQ_INTENT_1}} — final evidence: {{REQ_EVIDENCE_1}}
+
+## Work
+
+- {{WORK_BULLET_1}}
+- {{WORK_BULLET_2}}
+
+## Deferred work to resolve in this workstep
+
+- {{DEFERRED_ITEM_OR_NONE}} — requirement: {{DEFERRED_REQ}}; unlock condition: {{UNLOCK_CONDITION}}; evidence: {{DEFERRED_EVIDENCE}}
+
+## Acceptance criteria
+
+- AC-{{N}}.1 [{{REQ_ID_1}}] {{CRITERION_1}}
+- AC-{{N}}.2 [{{REQ_ID_2}}] {{CRITERION_2}}
+
+## Mandatory commands
+
+- {{COMMAND_1}}
+- {{COMMAND_2}}
+
+## Evidence required in transcript
+
+- {{EVIDENCE_1}}
+- {{EVIDENCE_2}}
+
+## Recovery boundaries
+
+- Preserve requirement IDs and their non-degradation invariants.
+- Use the full recovery ladder before `FAILURE_HANDOFF`.
+- Do not touch unrelated files.
+
+## Notes
+
+{{ANY_WORKSTEP_SPECIFIC_GUIDANCE}}
+
+---
+
+During execution print `SUPERGOAL_PHASE_VERIFY`, `MEMORY_SAVED`, and `SUPERGOAL_PHASE_DONE`. On the final Workstep, update the documentation trace before DONE. Follow {{RUN_ROOT}}/PROTOCOL.md for autonomous recovery, audit, closeout, and native Goal completion.
+
