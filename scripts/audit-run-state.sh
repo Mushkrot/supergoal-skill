@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 # Gather deterministic evidence for native Goal reconciliation.
-# This script does not close or classify a Goal; the agent must verify objective-specific truth.
+# This script does not close or classify a Goal; the caller must verify objective-specific truth.
 
 set -uo pipefail
 

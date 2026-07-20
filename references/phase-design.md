@@ -85,7 +85,7 @@ The override is read by the executor at VERIFY time and counts are reported but 
 
 ## Mandatory commands
 
-Every Workstep must include the engineering commands the agent has to run and surface output for:
+Every Workstep must include the engineering commands the executor has to run and surface output for:
 
 ```
 - pnpm build          (must exit 0)
@@ -100,7 +100,7 @@ If a command produces too much output to surface, require a **summary line** ("T
 
 ## Evidence required
 
-For each Workstep, list what the agent must print into the conversation to prove completion. The evaluator only sees the transcript. Common evidence types:
+For each Workstep, list what the executor must print into the conversation to prove completion. The evaluator only sees the transcript. Common evidence types:
 
 - **Command output excerpts** — last 10 lines of the test run, build summary
 - **File listings** — `ls -la` of the new files created, with sizes

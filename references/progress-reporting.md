@@ -34,7 +34,7 @@ During planning, assign each Workstep:
 - one to five stable milestone IDs whose points sum exactly to the Workstep effort;
 - one falsifiable evidence condition per milestone.
 
-A milestone becomes `done` only after its evidence exists. Do not award points for agent confidence, elapsed time, code volume, or an unverified claim that work is nearly finished.
+A milestone becomes `done` only after its evidence exists. Do not award points for subjective confidence, elapsed time, code volume, or an unverified claim that work is nearly finished.
 
 ```text
 weighted_percent = 100 * done_milestone_points / total_workstep_effort_points
@@ -115,13 +115,13 @@ Force a snapshot at these boundaries:
 4. final audit start and completion;
 5. genuine blocker and complete run.
 
-At every return of control to the agent, run a non-forced `snapshot`. Emit immediately when its material signature changed. Otherwise suppress duplicates until the adaptive heartbeat:
+At every return of control to the execution loop, run a non-forced `snapshot`. Emit immediately when its material signature changed. Otherwise suppress duplicates until the adaptive heartbeat:
 
 - remaining ETA high bound up to 2 hours: 15 minutes;
 - more than 2 and up to 8 hours: 30 minutes;
 - more than 8 hours or unavailable: 60 minutes.
 
-Maximum active silence is 60 minutes. Before a potentially long command, persist a checkpoint. Prefer yielded/pollable execution so the agent regains control at least every 60 seconds, checks the heartbeat, and only writes chat when the reporting interval is due. Do not replay missed heartbeats after application suspension; emit one fresh snapshot on resume.
+Maximum active silence is 60 minutes. Before a potentially long command, persist a checkpoint. Prefer yielded/pollable execution so control returns at least every 60 seconds, the heartbeat is checked, and chat output appears only when the reporting interval is due. Do not replay missed heartbeats after application suspension; emit one fresh snapshot on resume.
 
 The material signature includes rounded percentage, completed/total count, mode, plan revision, ETA bucket, and current Workstep. A changed signature bypasses duplicate suppression.
 

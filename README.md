@@ -19,7 +19,7 @@ an official release of the upstream project or OpenAI.
 
 ## What is different here?
 
-The upstream project is a broad, portable agent workflow. This fork takes a more
+The upstream project is a broad, portable automation workflow. This fork takes a more
 opinionated, Codex-native direction: maximum practical autonomy with the native
 Codex Goal lifecycle doing the long-running execution.
 
@@ -84,7 +84,7 @@ a red flag disappear by deleting requirements, skipping tests, weakening
 security, or lowering the requested quality bar. It asks for help only when a
 genuine blocker remains, such as unavailable credentials, missing authority for
 an irreversible external action, incompatible requirements, or a platform/policy
-restriction that the agent cannot resolve safely.
+restriction that Codex cannot resolve safely.
 
 ## Install
 
@@ -140,10 +140,9 @@ tests/         Portable progress behavior and lifecycle contract fixtures
 
 ## Repository workflow
 
-This fork uses one working branch: `main`. Maintainers and automation commit
-verified changes directly to `main` and push that branch. Do not create
-`agent/*`, feature, release, or documentation branches, and do not open pull
-requests, unless the repository owner explicitly asks for that workflow.
+This repository deliberately keeps a single branch: `main`. Verified changes
+are committed and pushed directly to it. Additional branches are created only
+when the repository owner explicitly requests them.
 
 ## Upstream and attribution
 

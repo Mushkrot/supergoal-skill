@@ -248,7 +248,7 @@ Validate every Workstep spec:
 bash "$SUPERGOAL_DIR/scripts/validate-phase.sh" "$SUPERGOAL_ROOT/phases/phase-N.md"
 ```
 
-Never silently drop imported pending work. Resolve it in a Workstep, retain a concrete unlock condition and target Workstep, or classify it as a genuine blocker. `out-of-scope` requires an explicit user exclusion, not an agent convenience.
+Never silently drop imported pending work. Resolve it in a Workstep, retain a concrete unlock condition and target Workstep, or classify it as a genuine blocker. `out-of-scope` requires an explicit user exclusion, not an implementation convenience.
 
 ## Stage 5.5 — Progress-aware plan repair
 
