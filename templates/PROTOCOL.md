@@ -2,7 +2,7 @@
 
 Run root: `{{RUN_ROOT}}`
 
-Read this file, `ROADMAP.md`, `requirement-contract.md`, `STATE.md`, `plan-integrity.md`, `deferred-work.md`, and `recallant-status.md` before execution. Continue autonomously until the run is complete or evidence proves a genuine blocker.
+Read this file, `ROADMAP.md`, `requirement-contract.md`, `STATE.md`, `plan-integrity.md`, `deferred-work.md`, `recallant-status.md`, and `progress.tsv` before execution. Continue autonomously until the run is complete or evidence proves a genuine blocker.
 
 ## Core invariants
 
@@ -12,24 +12,35 @@ Read this file, `ROADMAP.md`, `requirement-contract.md`, `STATE.md`, `plan-integ
 - Do not modify unrelated dirty work or commit it accidentally.
 - Do not complete while any requirement, criterion, required deferred item, documentation gate, audit, checkpoint, or required closeout remains unresolved.
 - Incorporate voluntary user changes at the next safe Workstep boundary and continue unless the user explicitly pauses or stops.
+- Treat progress reporting as informational. A renderer/state failure must produce the compact fallback and must not block product work.
+
+## Progress checkpoints
+
+Use the pinned helper at `{{RUN_ROOT}}/progress.sh` and the rules in the installed skill's `references/progress-reporting.md`.
+
+- At every return of control, run a non-forced `snapshot`; print it only when the command emits output.
+- Force events at Goal dispatch, Workstep completion, recovery start/complete, replan, audit start/complete, genuine blocker, and run completion.
+- Before a potentially long command, persist the current checkpoint and prefer yielded/pollable execution so heartbeat checks remain possible.
+- If a progress command fails or state is corrupt, record the diagnostic, print the three-line fallback with `ETA unavailable`, continue the task, and reconstruct progress at the next safe boundary.
+- Never ask the user whether to continue after a progress report.
 
 ## Workstep loop
 
 For current Workstep `N`:
 
-1. Set lifecycle state to `EXECUTING` and read `STATE.md`.
+1. Set lifecycle state to `EXECUTING`, set progress mode `active`, and read `STATE.md`.
 2. Read the Workstep spec at `phases/phase-N.md`.
 3. Re-read the requirement rows and deferred items targeted by this Workstep.
 4. Verify dependencies and unlock conditions. If a mechanical dependency is wrong, repair the plan and affected specs before work.
-5. Print `SUPERGOAL_PHASE_START` using the format reference.
+5. Run `workstep-start`, request a non-forced snapshot, and print `SUPERGOAL_PHASE_START` using the format reference.
 6. Execute the work while preserving unrelated user changes.
 7. Run every mandatory command valid at this point and surface exit codes plus relevant output.
 8. Use `repo-state.sh added-lines` against `Baseline ref` for debug prints, run-created TODO/FIXME markers, and dead imports. Apply a declared cleanliness override only when justified in the spec.
-9. Print `SUPERGOAL_PHASE_VERIFY` with each requirement and criterion mapped to evidence.
+9. Print `SUPERGOAL_PHASE_VERIFY` with each requirement and criterion mapped to evidence. Mark each mapped progress milestone done only after its evidence is present.
 10. Update `deferred-work.md`; mark only evidence-backed completed items `done`.
 11. Perform memory writeback when the current Codex memory contract permits it. Never save secrets or transient details.
 12. On the final planned Workstep, update `documentation-trace.md`, the durable project documentation, and print `DOCUMENTATION_TRACE` before DONE.
-13. Print `SUPERGOAL_PHASE_DONE`, update the Workstep row, requirement statuses, current phase, last checkpoint, and notable events in `STATE.md`.
+13. Run `workstep-done`, print `SUPERGOAL_PHASE_DONE`, update the Workstep row, requirement statuses, current phase, last checkpoint, progress snapshot, and notable events in `STATE.md`; then force event `workstep-done`.
 14. If the user sent a new instruction, incorporate it, update `requirement-contract.md`, repair the remaining plan, and continue. Pause only on explicit pause/stop.
 15. Continue to the next Workstep or the final audit.
 
@@ -58,6 +69,8 @@ For a failed criterion, command, deliverable, or audit check:
 7. **Full scope-preserving redesign:** rebuild remaining work from `requirement-contract.md`; verify 100% coverage and rerun preconditions.
 8. **Genuine blocker assessment:** stop only if no safe authorized path remains.
 
+On entry, set progress mode `recovering` and force `recovery-start`. After a repair, set mode `active` and force `recovery-complete`. When recovery changes Workstep structure, render a replacement progress file, run `replan`, verify stable milestone evidence carry-forward, and force `replan` before continuing.
+
 Do not use a fixed command-attempt count as proof of blockage. Print `FAILURE_ESCALATE` when moving between recovery levels. Emit `FAILURE_HANDOFF` only after all applicable levels are exhausted.
 
 When genuinely blocked:
@@ -66,10 +79,11 @@ When genuinely blocked:
 - preserve the exact blocking condition, recovery history, and evidence;
 - call native `update_goal({status: "blocked"})` only after the same condition has repeated for at least three consecutive Goal turns;
 - otherwise keep the Goal active and continue any meaningful recovery available.
+- set progress mode `blocked` and force a blocker snapshot only after the evidence supports genuine blockage.
 
 ## Final audit
 
-After the last Workstep, set lifecycle state to `FINAL_AUDIT`. Audit against the original roadmap and requirement contract, not Workstep self-reports.
+After the last Workstep, set lifecycle state to `FINAL_AUDIT`, set progress mode `auditing`, and force `audit-start`. Audit against the original roadmap and requirement contract, not Workstep self-reports.
 
 For each audit round:
 
@@ -92,7 +106,7 @@ For each audit round:
 
 If gaps exist, print `AUDIT_GAPS` and apply the recovery ladder. Create `phases/audit-fix-<round>.md` for focused gaps, but do not stop after three rounds if a higher recovery level remains. Continue while evidence or the integrity fingerprint improves. Emit `AUDIT_HANDOFF` only after full scope-preserving redesign fails and a genuine blocker is established.
 
-If clean, print `AUDIT_COMPLETE`, update requirement coverage and final audit status in `STATE.md`, and proceed to closeout.
+If clean, print `AUDIT_COMPLETE`, update requirement coverage and final audit status in `STATE.md`, force `audit-complete`, and proceed to closeout.
 
 ## Documentation trace
 
@@ -146,9 +160,10 @@ After all gates pass:
 6. Confirm Recallant closeout completed or has an allowed evidence-backed skip.
 7. Confirm optional Project Phase footer handling.
 8. Set `Status: COMPLETE`, `Lifecycle state: COMPLETE`, and `Last verified checkpoint: all completion gates passed`.
-9. Print `SUPERGOAL_RUN_COMPLETE`.
-10. Call native `update_goal({status: "complete"})`.
-11. Record `Native Goal closeout status: complete` and the tool result in `STATE.md` when possible; always surface it in the transcript.
+9. Set progress mode `complete` and force the final `complete` snapshot.
+10. Print `SUPERGOAL_RUN_COMPLETE`.
+11. Call native `update_goal({status: "complete"})`.
+12. Record `Native Goal closeout status: complete` and the tool result in `STATE.md` when possible; always surface it in the transcript.
 
 If native closeout fails, preserve the completed gate evidence and record `Native Goal closeout status: stale — closeout call failed`. A later Supergoal can then reconcile it as `STALE_COMPLETE` without repeating product work.
 
@@ -158,6 +173,7 @@ Use `{{RUN_ROOT}}/GOAL_FORMAT.md` for:
 
 - `GOAL_RECONCILIATION`;
 - Workstep START/VERIFY/DONE blocks;
+- `SUPERGOAL_PROGRESS` snapshots;
 - memory and documentation blocks;
 - audit and recovery blocks;
 - auto-commit and Recallant blocks;

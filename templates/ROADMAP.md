@@ -4,6 +4,7 @@
 **Type:** {{TAGS}}
 **Created:** {{DATE}}
 **Total worksteps:** {{N}}
+**Total effort points:** {{TOTAL_EFFORT_POINTS}}
 **Requirement contract:** {{RUN_ROOT}}/requirement-contract.md
 
 ## Context summary
@@ -57,18 +58,30 @@ Every required row must map to at least one Workstep criterion and one final ver
 
 ## Workstep map
 
-| # | Workstep | Requirements | Depends on | Deliverable |
-|---|---|---|---|---|
-| 1 | {{P1_NAME}} | {{P1_REQUIREMENTS}} | — | {{P1_DELIVERABLE}} |
-| 2 | {{P2_NAME}} | {{P2_REQUIREMENTS}} | 1 | {{P2_DELIVERABLE}} |
-| ... | ... | ... | ... | ... |
-| N | Polish & Harden | {{PN_REQUIREMENTS}} | 1..N-1 | All requirements verified |
+| # | Workstep | Effort | Planned range | Requirements | Depends on | Deliverable |
+|---|---|---:|---:|---|---|---|
+| 1 | {{P1_NAME}} | {{P1_EFFORT}} | {{P1_MIN}}–{{P1_MAX}} min | {{P1_REQUIREMENTS}} | — | {{P1_DELIVERABLE}} |
+| 2 | {{P2_NAME}} | {{P2_EFFORT}} | {{P2_MIN}}–{{P2_MAX}} min | {{P2_REQUIREMENTS}} | 1 | {{P2_DELIVERABLE}} |
+| ... | ... | ... | ... | ... | ... | ... |
+| N | Polish & Harden | {{PN_EFFORT}} | {{PN_MIN}}–{{PN_MAX}} min | {{PN_REQUIREMENTS}} | 1..N-1 | All requirements verified |
+
+## Progress milestones
+
+Milestone points must sum to the Effort points of their Workstep. Mark a milestone done only when its evidence condition is satisfied.
+
+| ID | Workstep | Points | Evidence condition |
+|---|---:|---:|---|
+| M1.1 | 1 | {{M1_1_POINTS}} | {{M1_1_EVIDENCE}} |
 
 ## Workstep 1 — {{P1_NAME}}
 
 **Why:** {{P1_WHY}}
 
 **Requirements:** {{P1_REQUIREMENTS}}
+
+**Effort points:** {{P1_EFFORT}}
+
+**Planned duration:** {{P1_MIN}}–{{P1_MAX}} minutes
 
 **Deliverables:**
 - {{P1_FILE_OR_FEATURE_1}}
@@ -91,4 +104,3 @@ Every required row must map to at least one Workstep criterion and one final ver
 ## Workstep N — Polish & Harden
 
 Verify applicable UX/copy, states, edges, security, accessibility, performance, documentation trace, memory/Recallant closeout preparation, diff cleanliness, full regression, requirement coverage, and required deferred work. Re-run all mandatory commands and produce evidence for every remaining requirement.
-

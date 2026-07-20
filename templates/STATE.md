@@ -64,12 +64,28 @@
 
 ## Workstep progress
 
-| # | Workstep | Requirements | Status | Started | Completed | Notes |
-|---|---|---|---|---|---|---|
-| 1 | {{P1_NAME}} | {{P1_REQUIREMENTS}} | pending | — | — | — |
-| 2 | {{P2_NAME}} | {{P2_REQUIREMENTS}} | pending | — | — | — |
-| ... | ... | ... | pending | — | — | — |
-| N | Polish & Harden | {{PN_REQUIREMENTS}} | pending | — | — | — |
+| # | Workstep | Effort | Requirements | Status | Started | Completed | Notes |
+|---|---|---:|---|---|---|---|---|
+| 1 | {{P1_NAME}} | {{P1_EFFORT}} | {{P1_REQUIREMENTS}} | pending | — | — | — |
+| 2 | {{P2_NAME}} | {{P2_EFFORT}} | {{P2_REQUIREMENTS}} | pending | — | — | — |
+| ... | ... | ... | ... | pending | — | — | — |
+| N | Polish & Harden | {{PN_EFFORT}} | {{PN_REQUIREMENTS}} | pending | — | — | — |
+
+## Progress snapshot
+
+- Schema version: 1
+- Plan revision: 1
+- Previous / current Worksteps: {{N}} / {{N}}
+- Weighted progress: 0%
+- Completed Worksteps: 0 / {{N}}
+- Wall / active elapsed: 0m / 0m
+- ETA range: {{ETA_INITIAL_RANGE}}
+- Confidence: low
+- Mode: planning
+- Current Workstep: —
+- Last progress report: —
+- Progress state: {{RUN_ROOT}}/progress.tsv
+- Progress history: {{RUN_ROOT}}/progress-history.tsv
 
 ## Engineering check status
 
@@ -87,4 +103,3 @@
 Record every recovery level, evidence, and result. A command failure is not itself a blocker.
 
 - {{DATE}} — none
-

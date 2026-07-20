@@ -56,6 +56,8 @@ Each Workstep's acceptance criteria should be:
 - **Falsifiable** — you can say yes or no, not "kind of"
 - **Tied to commands or evidence** — `npm test` output, a file existing, a screenshot diff
 
+For long-running Supergoal runs, also assign effort points, a planned duration range, and evidence-backed progress milestones. Read `progress-reporting.md` for the scoring, ETA, cadence, and replan contract. Complexity weights complement acceptance criteria; they never replace them.
+
 Bad: "User authentication works."
 Good:
 - `npm run build` succeeds with 0 errors

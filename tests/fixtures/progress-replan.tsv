@@ -1,0 +1,21 @@
+meta	schema_version	1
+meta	run_started_epoch	9999
+meta	last_report_epoch	0
+meta	last_signature	-
+meta	plan_revision	1
+meta	previous_total_worksteps	4
+meta	mode	active
+meta	mode_started_epoch	9999
+meta	paused_seconds	0
+meta	stable_completions	0
+meta	last_replan_reason	replacement
+workstep	1	pending	2	10	20	0	0	0	0	Foundation
+workstep	2	pending	5	20	40	0	0	0	0	Integration
+workstep	3	pending	3	10	30	0	0	0	0	Polish & Harden
+workstep	4	pending	2	10	20	0	0	0	0	Compatibility follow-up
+milestone	M1.1	1	1	pending	-
+milestone	M1.2	1	1	pending	-
+milestone	M2.1	2	2	pending	-
+milestone	M2.2	2	3	pending	-
+milestone	M3.1	3	3	pending	-
+milestone	M4.1	4	2	pending	-

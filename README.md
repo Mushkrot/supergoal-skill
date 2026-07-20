@@ -39,6 +39,33 @@ need to copy a generated `/goal` command back into the same chat. If native Goal
 dispatch is unavailable, Supergoal prepares that command as an emergency
 fallback instead of pretending everything is fine.
 
+## Progress without the staring contest
+
+Long runs now publish compact progress snapshots in the chat, so you can check
+the task in one glance instead of opening every log and asking whether it is
+still alive:
+
+```text
+🟦 SUPERGOAL PROGRESS
+███████░░░ 68% · 6/9 Worksteps · 4h 12m elapsed · ETA 2–4h (medium)
+Now: W07 — Integration hardening · Plan rev 2 · active
+```
+
+The percentage is weighted by planned Workstep complexity and only advances on
+verified milestones. The Workstep count remains visible separately. ETA is an
+honest range calibrated from completed work, with a confidence level—not a tiny
+fortune cookie promising completion at 3:17 PM.
+
+Supergoal reports after material boundaries such as Workstep completion,
+recovery, replan, and final audit, plus an adaptive heartbeat for long quiet
+stretches. Replans show the changed Workstep count and may lower the percentage
+when the remaining work honestly grew. State is durable across resume and stale
+Goal reconciliation, while a broken progress file falls back to `ETA
+unavailable` and never blocks the actual task.
+
+This output is a Markdown report in the task. Supergoal does not patch or extend
+the native Codex Goal row; that row keeps its own timer and controls.
+
 ## Is this a replacement for Codex `/goal`?
 
 For everyday use, yes: invoke Supergoal instead of manually preparing and
@@ -108,6 +135,7 @@ agents/        Codex skill metadata
 references/    Planning, Workstep, Goal-format, and repository-state rules
 scripts/       Deterministic discovery, validation, run-claim, and audit helpers
 templates/     Durable run state, protocol, requirement, and closeout templates
+tests/         Portable progress behavior and lifecycle contract fixtures
 ```
 
 ## Upstream and attribution

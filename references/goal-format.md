@@ -52,6 +52,29 @@ Action: <native close|resume old run|continue investigation|block|start new run>
 
 ## Workstep transcript blocks
 
+### `SUPERGOAL_PROGRESS`
+
+Print the helper output exactly when it emits a snapshot. Normal output is three lines:
+
+```markdown
+**🟦 SUPERGOAL PROGRESS**
+**███████░░░ 68%** · **6/9 Worksteps** · ⏱ **4h 12m** · ETA **2–4h** *(medium)*
+Now: **W07 — Integration hardening** · Plan rev **2** · **active**
+```
+
+Use `🟨` for recovering/waiting, `🟥` only for genuine blockage, and `🟩` for complete. On replan, the third line shows the old/new Workstep counts and reason. If state cannot be trusted, print the helper fallback with `Progress unavailable` and continue product work.
+
+Mode-specific compact examples:
+
+```text
+🟨 recovering — Now: W04 — Repair migration ordering · Plan rev 2 · recovering
+🟨 waiting — ETA unavailable · Now: W04 — External environment · waiting
+🟥 blocked — ETA unavailable · Now: required authority unavailable · blocked
+🟩 complete — 100% · 9/9 Worksteps · ETA 0m · complete
+```
+
+These are semantic labels, not a color-only contract. The helper emits bold Markdown and the full three-line block.
+
 ### `SUPERGOAL_PHASE_START`
 
 ```text

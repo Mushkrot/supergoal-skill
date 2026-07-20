@@ -226,6 +226,8 @@ Derive the number of Worksteps from independently verifiable units; do not impos
 
 Read `references/phase-design.md` and `references/planning-depth.md` for the quality bar.
 
+For long-running visibility, also assign each Workstep effort points, a planned duration range, and evidence-backed milestones. Read `references/progress-reporting.md`; weighted progress supplements Workstep acceptance and never replaces it.
+
 ## Stage 5 — Write run artifacts
 
 Create:
@@ -236,6 +238,7 @@ Create:
 - `deferred-work.md`;
 - `documentation-trace.md`;
 - `recallant-status.md`;
+- `progress.tsv` rendered from `templates/progress.tsv`;
 - optional `phase-position.md`;
 - one `phases/phase-N.md` per Workstep from `templates/phase-goal.txt`.
 
@@ -272,11 +275,15 @@ After each repair:
 3. Verify 100% requirement coverage.
 4. Compare the new integrity fingerprint with the prior round.
 
+For every structural plan change, update the replacement progress plan and run `progress.sh replan` so verified milestones carry by stable ID, the plan revision increments, and the next forced report exposes any changed denominator. Never hide a lower recalculated percentage.
+
 Continue while the flag set or severity improves. If the same unresolved fingerprint repeats, escalate to the next repair level. After the full-plan rebuild, classify a remaining issue as a genuine blocker only when no safe authorized scope-preserving solution exists. Do not turn a mechanical planning defect into a user question.
 
 For lint, preserve the pre-edit baseline and prove that run-touched files add no new errors. Never report a red baseline as green.
 
 ## Stage 6 — Informational summary and pre-flight
+
+Before pre-flight, initialize and validate durable progress state with `bash "$SUPERGOAL_DIR/scripts/progress.sh" init "$SUPERGOAL_ROOT"`. Treat reporting errors as nonblocking: print the reference fallback, preserve the diagnostic, and repair progress at the next safe boundary while continuing the product task.
 
 Print a compact summary of Worksteps, assumptions chosen, requirements covered, repairs made, risks, deferred work, and artifacts. Then print:
 
@@ -306,18 +313,19 @@ After pre-flight is acceptable:
 1. Capture `Baseline ref` and `baseline-status.txt`.
 2. Render `PROTOCOL.md` with the literal run root.
 3. Copy `repo-state.sh` and `references/goal-format.md` into the run root as `repo-state.sh` and `GOAL_FORMAT.md`.
-4. Revalidate every Workstep spec and requirement mapping.
-5. Set lifecycle state to `CREATING_GOAL`.
-6. Build a compact objective containing:
+4. Copy `scripts/progress.sh` into the run root as `progress.sh` so resume behavior is pinned to the run contract.
+5. Revalidate every Workstep spec and requirement mapping.
+6. Set lifecycle state to `CREATING_GOAL`.
+7. Build a compact objective containing:
    - `Supergoal run root: <run-root>`;
    - instructions to read `ROADMAP.md`, `requirement-contract.md`, and `PROTOCOL.md`;
    - all-Workstep execution and autonomous scope-preserving recovery;
    - final audit, documentation, auto-commit, Recallant, and optional Project Phase gates;
    - no unresolved required deferred work or handoff marker;
    - native Goal closeout after verified completion.
-7. Call `create_goal({objective: <objective>})` without `token_budget` unless explicitly requested.
+8. Call `create_goal({objective: <objective>})` without `token_budget` unless explicitly requested.
 
-On success, write `Goal dispatch method: native`, set lifecycle state to `EXECUTING`, and begin Workstep 1 immediately in the same task. Do not stop after creating the Goal.
+On success, write `Goal dispatch method: native`, set lifecycle state to `EXECUTING`, set progress mode `active`, and force the `goal-dispatched` snapshot. Begin Workstep 1 immediately in the same task. Do not stop after creating the Goal or ask about the progress report.
 
 ### Dispatch failure routing
 
@@ -328,6 +336,8 @@ On success, write `Goal dispatch method: native`, set lifecycle state to `EXECUT
 ## Execution, audit, and closeout
 
 Follow the rendered `PROTOCOL.md` for Workstep execution, requirement checks, deferred work, memory writeback, documentation, final audit, auto-commit, Recallant closeout, Project Phase footer, and recovery. Use `references/goal-format.md` for transcript blocks.
+
+At every return of control, ask the pinned run `progress.sh` for a non-forced snapshot. Force snapshots at Workstep completion, recovery/replan transitions, audit boundaries, genuine blockage, and completion. Follow `references/progress-reporting.md` for cadence, ETA, migration, and fallback rules.
 
 When the user voluntarily sends a change during execution, incorporate it at the next safe Workstep boundary, update the requirement contract and affected specs, re-run integrity checks, and continue automatically. Pause only when the user explicitly asks to pause or stop.
 
@@ -355,6 +365,8 @@ Do not equate three command attempts with a genuine blocker. For a failing crite
 7. Perform a full scope-preserving redesign from the requirement contract.
 8. Re-run affected verification and the final audit.
 
+Set progress mode `recovering` and force a snapshot when entering recovery. After successful repair, set mode `active`, update/replan durable progress if structure changed, force the recovery-complete snapshot, and continue. A progress subsystem failure is never itself a genuine blocker.
+
 Classify the failure as command-specific, approach-specific, environment-specific, authority-specific, or logically impossible. Use `GENUINELY_BLOCKED` only after the applicable ladder is exhausted and no meaningful progress remains. Respect Codex's three-consecutive-Goal-turn requirement before calling `update_goal({status: "blocked"})`.
 
 ## Operating principles
@@ -375,6 +387,7 @@ Classify the failure as command-specific, approach-specific, environment-specifi
 - `references/phase-design.md`: Workstep slicing and dependency rules.
 - `references/goal-format.md`: native Goal lifecycle, fallback objective, and transcript blocks.
 - `references/repo-state-comparison.md`: complete working-tree comparison strategy.
+- `references/progress-reporting.md`: weighted progress, ETA, cadence, migration, and rendering contract.
 
 ## Scripts
 
@@ -385,9 +398,11 @@ Classify the failure as command-specific, approach-specific, environment-specifi
 - `scripts/repo-state.sh`: compare complete working-tree state against baseline.
 - `scripts/validate-phase.sh`: validate Workstep structure and requirement mappings.
 - `scripts/audit-run-state.sh`: gather deterministic stale-Goal reconciliation evidence.
+- `scripts/progress.sh`: validate and update durable progress, estimate ETA, suppress duplicate heartbeats, and render operator snapshots.
 
 ## Templates
 
 - `templates/STATE.md`, `ROADMAP.md`, `phase-goal.txt`, and `PROTOCOL.md`.
 - `templates/requirement-contract.md` and `goal-reconciliation.md`.
 - `templates/documentation-trace.md`, `recallant-status.md`, `recallant-closeout.md`, and `phase-position.md`.
+- `templates/progress.tsv`: dependency-light durable progress schema.

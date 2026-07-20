@@ -1,0 +1,23 @@
+name: test
+
+on:
+  push:
+  pull_request:
+
+jobs:
+  progress-contract:
+    strategy:
+      matrix:
+        os: [ubuntu-latest, macos-latest]
+    runs-on: ${{ matrix.os }}
+    steps:
+      - uses: actions/checkout@v4
+      - name: Check shell syntax
+        run: |
+          for file in scripts/*.sh tests/*.sh; do
+            bash -n "$file"
+          done
+      - name: Validate Workstep template
+        run: bash scripts/validate-phase.sh templates/phase-goal.txt
+      - name: Run progress contract
+        run: bash tests/progress-reporting.sh

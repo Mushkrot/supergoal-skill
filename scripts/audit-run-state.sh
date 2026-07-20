@@ -21,6 +21,8 @@ contract="$run_root/requirement-contract.md"
 deferred="$run_root/deferred-work.md"
 docs="$run_root/documentation-trace.md"
 recallant="$run_root/recallant-closeout.md"
+progress="$run_root/progress.tsv"
+progress_helper="$run_root/progress.sh"
 
 field_value() {
   local file="$1"
@@ -62,7 +64,33 @@ native_closeout=$(field_value "$state" 'Native Goal closeout status')
 run_status=$(field_value "$state" 'Status')
 lifecycle=$(field_value "$state" 'Lifecycle state')
 
-handoff_count=$(grep -REIh 'FAILURE_HANDOFF|AUDIT_HANDOFF|AUTO_COMMIT_HANDOFF|RECALLANT_HANDOFF' "$run_root" 2>/dev/null | wc -l | tr -d ' ')
+progress_artifact='missing'
+progress_validation='not-available'
+progress_revision='unknown'
+progress_mode='unknown'
+if [[ -f "$progress" ]]; then
+  progress_artifact='present'
+  progress_revision=$(awk -F '\t' '$1 == "meta" && $2 == "plan_revision" { print $3; exit }' "$progress")
+  progress_mode=$(awk -F '\t' '$1 == "meta" && $2 == "mode" { print $3; exit }' "$progress")
+  if [[ -f "$progress_helper" ]] && bash "$progress_helper" validate "$run_root" >/dev/null 2>&1; then
+    progress_validation='pass'
+  else
+    progress_validation='fail-or-helper-missing'
+  fi
+fi
+
+handoff_count=0
+for handoff_evidence in \
+  "$state" \
+  "$run_root/failure-handoff.md" \
+  "$run_root/audit-handoff.md" \
+  "$run_root/auto-commit-handoff.md" \
+  "$run_root/recallant-handoff.md"; do
+  if [[ -f "$handoff_evidence" ]]; then
+    count=$(grep -Eic 'FAILURE_HANDOFF|AUDIT_HANDOFF|AUTO_COMMIT_HANDOFF|RECALLANT_HANDOFF' "$handoff_evidence" || true)
+    handoff_count=$((handoff_count + count))
+  fi
+done
 
 docs_artifact='missing'
 [[ -f "$docs" ]] && docs_artifact='present'
@@ -107,5 +135,9 @@ printf 'auto_commit_status=%s\n' "$commit_status"
 printf 'recallant_status=%s\n' "$recallant_status"
 printf 'recallant_artifact=%s\n' "$recallant_artifact"
 printf 'native_goal_closeout=%s\n' "$native_closeout"
+printf 'progress_artifact=%s\n' "$progress_artifact"
+printf 'progress_validation=%s\n' "$progress_validation"
+printf 'progress_plan_revision=%s\n' "$progress_revision"
+printf 'progress_mode=%s\n' "$progress_mode"
 printf 'handoff_markers=%s\n' "$handoff_count"
 printf 'classification_hint=%s\n' "$hint"

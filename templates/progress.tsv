@@ -1,0 +1,13 @@
+meta	schema_version	1
+meta	run_started_epoch	{{RUN_STARTED_EPOCH}}
+meta	last_report_epoch	0
+meta	last_signature	-
+meta	plan_revision	1
+meta	previous_total_worksteps	{{TOTAL_WORKSTEPS}}
+meta	mode	planning
+meta	mode_started_epoch	{{RUN_STARTED_EPOCH}}
+meta	paused_seconds	0
+meta	stable_completions	0
+meta	last_replan_reason	initial plan
+workstep	{{WORKSTEP_ID}}	pending	{{EFFORT_POINTS}}	{{PLANNED_MIN_MINUTES}}	{{PLANNED_MAX_MINUTES}}	0	0	0	0	{{WORKSTEP_NAME}}
+milestone	{{MILESTONE_ID}}	{{WORKSTEP_ID}}	{{MILESTONE_POINTS}}	pending	-

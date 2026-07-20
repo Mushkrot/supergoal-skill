@@ -11,6 +11,8 @@ Acceptance criteria: {{CRIT_COUNT}}
 Evidence required: {{EVIDENCE_CSV}}
 Depends on worksteps: {{DEPS}}
 Deferred items targeted here: {{DEFERRED_ITEMS_OR_NONE}}
+Effort points: {{EFFORT_POINTS}}
+Planned duration: {{PLANNED_MIN_MINUTES}}-{{PLANNED_MAX_MINUTES}} minutes
 
 ## Why
 
@@ -33,6 +35,13 @@ Deferred items targeted here: {{DEFERRED_ITEMS_OR_NONE}}
 
 - AC-{{N}}.1 [{{REQ_ID_1}}] {{CRITERION_1}}
 - AC-{{N}}.2 [{{REQ_ID_2}}] {{CRITERION_2}}
+
+## Progress milestones
+
+- {{MILESTONE_ID_1}} ({{MILESTONE_POINTS_1}} points) — evidence: {{MILESTONE_EVIDENCE_1}}
+- {{MILESTONE_ID_2}} ({{MILESTONE_POINTS_2}} points) — evidence: {{MILESTONE_EVIDENCE_2}}
+
+Milestone points must sum to `{{EFFORT_POINTS}}`. Mark them done only after the listed evidence exists.
 
 ## Mandatory commands
 
@@ -57,4 +66,3 @@ Deferred items targeted here: {{DEFERRED_ITEMS_OR_NONE}}
 ---
 
 During execution print `SUPERGOAL_PHASE_VERIFY`, `MEMORY_SAVED`, and `SUPERGOAL_PHASE_DONE`. On the final Workstep, update the documentation trace before DONE. Follow {{RUN_ROOT}}/PROTOCOL.md for autonomous recovery, audit, closeout, and native Goal completion.
-
