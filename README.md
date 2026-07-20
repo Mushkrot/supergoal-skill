@@ -138,6 +138,13 @@ templates/     Durable run state, protocol, requirement, and closeout templates
 tests/         Portable progress behavior and lifecycle contract fixtures
 ```
 
+## Repository workflow
+
+This fork uses one working branch: `main`. Maintainers and automation commit
+verified changes directly to `main` and push that branch. Do not create
+`agent/*`, feature, release, or documentation branches, and do not open pull
+requests, unless the repository owner explicitly asks for that workflow.
+
 ## Upstream and attribution
 
 - Original project: [cskwork/supergoal-skill](https://github.com/cskwork/supergoal-skill)
