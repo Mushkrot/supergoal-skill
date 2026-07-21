@@ -13,15 +13,17 @@ Read this file, `ROADMAP.md`, `requirement-contract.md`, `STATE.md`, `plan-integ
 - Do not complete while any requirement, criterion, required deferred item, documentation gate, audit, checkpoint, or required closeout remains unresolved.
 - Incorporate voluntary user changes at the next safe Workstep boundary and continue unless the user explicitly pauses or stops.
 - Treat progress reporting as informational. A renderer/state failure must produce the compact fallback and must not block product work.
+- Treat command stdout as tool evidence, not as the user-visible report. A progress block is complete only after it is repeated unchanged in a separate assistant message.
 
 ## Progress checkpoints
 
 Use the pinned helper at `{{RUN_ROOT}}/progress.sh` and the rules in the installed skill's `references/progress-reporting.md`.
 
-- At every return of control, run a non-forced `snapshot`; print it only when the command emits output.
+- At every return of control, run a non-forced `snapshot`; when it emits output, publish its exact three lines as a standalone assistant message. Do not summarize it or rely on collapsed ran-command output.
 - Force events at Goal dispatch, Workstep completion, recovery start/complete, replan, audit start/complete, genuine blocker, and run completion.
 - Before a potentially long command, persist the current checkpoint and prefer yielded/pollable execution so heartbeat checks remain possible.
 - If a progress command fails or state is corrupt, record the diagnostic, print the three-line fallback with `ETA unavailable`, continue the task, and reconstruct progress at the next safe boundary.
+- After context compaction, automatic continuation, or application resume, run `progress.sh report <run-root>` and publish the returned block first. This command intentionally bypasses cadence suppression.
 - Never ask the user whether to continue after a progress report.
 
 ## Workstep loop
@@ -32,7 +34,7 @@ For current Workstep `N`:
 2. Read the Workstep spec at `phases/phase-N.md`.
 3. Re-read the requirement rows and deferred items targeted by this Workstep.
 4. Verify dependencies and unlock conditions. If a mechanical dependency is wrong, repair the plan and affected specs before work.
-5. Run `workstep-start`, request a non-forced snapshot, and print `SUPERGOAL_PHASE_START` using the format reference.
+5. Run `workstep-start`, request a non-forced snapshot, publish it as a separate assistant message if emitted, and print `SUPERGOAL_PHASE_START` using the format reference.
 6. Execute the work while preserving unrelated user changes.
 7. Run every mandatory command valid at this point and surface exit codes plus relevant output.
 8. Use `repo-state.sh added-lines` against `Baseline ref` for debug prints, run-created TODO/FIXME markers, and dead imports. Apply a declared cleanliness override only when justified in the spec.

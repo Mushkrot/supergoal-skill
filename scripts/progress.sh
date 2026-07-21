@@ -14,6 +14,7 @@ usage:
   progress.sh mode <run-root> <planning|active|recovering|waiting|auditing|blocked|complete>
   progress.sh replan <run-root> [replacement-progress.tsv] [reason]
   progress.sh snapshot <run-root> [--force] [--event <name>]
+  progress.sh report <run-root>
 EOF
   exit 2
 }
@@ -123,6 +124,23 @@ replace_state() {
 
 new_temp() {
   mktemp "$run_root/.progress.tsv.XXXXXX" 2>/dev/null || fail "cannot create a temporary state file under $run_root"
+}
+
+new_report_temp() {
+  mktemp "$run_root/.progress-latest.md.XXXXXX" 2>/dev/null || fail "cannot create a temporary report file under $run_root"
+}
+
+write_latest_report() {
+  local report="$1" tmp
+  tmp=$(new_report_temp) || return 1
+  if ! printf '%s\n' "$report" > "$tmp"; then
+    rm -f "$tmp"
+    return 1
+  fi
+  if ! mv "$tmp" "$latest_file"; then
+    rm -f "$tmp"
+    return 1
+  fi
 }
 
 ensure_history() {
@@ -378,7 +396,7 @@ command_replan() {
 }
 
 fallback_snapshot() {
-  local now wall=0 done=0 total=0 started=0
+  local now wall=0 done=0 total=0 started=0 report
   now=$(now_epoch)
   if [[ -f "$run_root/STATE.md" ]]; then
     total=$(awk -F '|' '$2 ~ /^[[:space:]]*[0-9]+[[:space:]]*$/ { count++ } END { print count + 0 }' "$run_root/STATE.md")
@@ -389,9 +407,9 @@ fallback_snapshot() {
   fi
   [[ "$started" =~ ^[0-9]+$ ]] || started=0
   if [[ "$now" -ge "$started" && "$started" -gt 0 ]]; then wall=$((now - started)); fi
-  printf '**🟨 SUPERGOAL PROGRESS**\n'
-  printf '**Progress unavailable** · **%s/%s Worksteps** · ⏱ **%s** · ETA **unavailable** *(unavailable)*\n' "$done" "$total" "$(format_seconds "$wall")"
-  printf 'Now: **progress state repair pending** · **recovering**\n'
+  report=$(printf '**🟨 SUPERGOAL PROGRESS**\n**Progress unavailable** · **%s/%s Worksteps** · ⏱ **%s** · ETA **unavailable** *(unavailable)*\nNow: **progress state repair pending** · **recovering**' "$done" "$total" "$(format_seconds "$wall")")
+  write_latest_report "$report" 2>/dev/null || true
+  printf '%s\n' "$report"
 }
 
 format_seconds() {
@@ -492,6 +510,33 @@ calculate_snapshot() {
   ' "$state_file"
 }
 
+render_snapshot() {
+  local percent="$1" done="$2" total="$3" wall="$4" active="$5" eta_low="$6" eta_high="$7" confidence="$8" mode="$9" revision="${10}" previous="${11}" current_id="${12}" current_name="${13}" reason="${14}"
+  local filled empty bar="" i marker eta elapsed display_name workstep_label
+  filled=$((percent / 10))
+  empty=$((10 - filled))
+  [[ "$filled" -gt 10 ]] && filled=10
+  for ((i=0; i<filled; i++)); do bar="${bar}█"; done
+  for ((i=0; i<empty; i++)); do bar="${bar}░"; done
+  case "$mode" in
+    complete) marker='🟩' ;;
+    recovering|waiting) marker='🟨' ;;
+    blocked) marker='🟥' ;;
+    *) marker='🟦' ;;
+  esac
+  eta=$(format_eta "$eta_low" "$eta_high")
+  elapsed=$(format_seconds "$wall")
+  display_name=$(printf '%s' "$current_name" | cut -c1-60)
+  if [[ "$current_id" =~ ^[0-9]+$ ]]; then workstep_label=$(printf 'W%02d' "$current_id"); else workstep_label="$current_id"; fi
+  printf '**%s SUPERGOAL PROGRESS**\n' "$marker"
+  printf '**%s %s%%** · **%s/%s Worksteps** · ⏱ **%s** · ETA **%s** *(%s)*\n' "$bar" "$percent" "$done" "$total" "$elapsed" "$eta" "$confidence"
+  if [[ "$previous" != "$total" && "$revision" -gt 1 ]]; then
+    printf 'Plan rev **%s**: **%s → %s Worksteps** · %s\n' "$revision" "$previous" "$total" "$reason"
+  else
+    printf 'Now: **%s — %s** · Plan rev **%s** · **%s**\n' "$workstep_label" "$display_name" "$revision" "$mode"
+  fi
+}
+
 command_snapshot() {
   local force=0 event="heartbeat" arg now values percent done total wall active eta_low eta_high confidence mode revision previous current_id current_name interval signature reason ratios
   while [[ $# -gt 0 ]]; do
@@ -532,29 +577,30 @@ command_snapshot() {
   fi
   printf '%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\n' "$now" "$event" "$percent" "$done" "$total" "$wall" "$active" "$eta_low" "$eta_high" "$confidence" "$mode" "$revision" >> "$history_file"
 
-  local filled empty bar="" i marker eta elapsed display_name workstep_label
-  filled=$((percent / 10))
-  empty=$((10 - filled))
-  [[ "$filled" -gt 10 ]] && filled=10
-  for ((i=0; i<filled; i++)); do bar="${bar}█"; done
-  for ((i=0; i<empty; i++)); do bar="${bar}░"; done
-  case "$mode" in
-    complete) marker='🟩' ;;
-    recovering|waiting) marker='🟨' ;;
-    blocked) marker='🟥' ;;
-    *) marker='🟦' ;;
-  esac
-  eta=$(format_eta "$eta_low" "$eta_high")
-  elapsed=$(format_seconds "$wall")
-  display_name=$(printf '%s' "$current_name" | cut -c1-60)
-  if [[ "$current_id" =~ ^[0-9]+$ ]]; then workstep_label=$(printf 'W%02d' "$current_id"); else workstep_label="$current_id"; fi
-  printf '**%s SUPERGOAL PROGRESS**\n' "$marker"
-  printf '**%s %s%%** · **%s/%s Worksteps** · ⏱ **%s** · ETA **%s** *(%s)*\n' "$bar" "$percent" "$done" "$total" "$elapsed" "$eta" "$confidence"
-  if [[ "$previous" != "$total" && "$revision" -gt 1 ]]; then
-    printf 'Plan rev **%s**: **%s → %s Worksteps** · %s\n' "$revision" "$previous" "$total" "$reason"
-  else
-    printf 'Now: **%s — %s** · Plan rev **%s** · **%s**\n' "$workstep_label" "$display_name" "$revision" "$mode"
+  local report
+  report=$(render_snapshot "$percent" "$done" "$total" "$wall" "$active" "$eta_low" "$eta_high" "$confidence" "$mode" "$revision" "$previous" "$current_id" "$current_name" "$reason")
+  if ! write_latest_report "$report"; then
+    fallback_snapshot
+    return 0
   fi
+  printf '%s\n' "$report"
+}
+
+command_report() {
+  local now values percent done total wall active eta_low eta_high confidence mode revision previous current_id current_name interval signature reason ratios report
+  if ! validate_file "$state_file"; then
+    fallback_snapshot
+    return 0
+  fi
+  now=$(now_epoch)
+  values=$(calculate_snapshot "$now") || { fallback_snapshot; return 0; }
+  IFS=$'\t' read -r percent done total wall active eta_low eta_high confidence mode revision previous current_id current_name interval signature reason ratios <<< "$values"
+  report=$(render_snapshot "$percent" "$done" "$total" "$wall" "$active" "$eta_low" "$eta_high" "$confidence" "$mode" "$revision" "$previous" "$current_id" "$current_name" "$reason")
+  if ! write_latest_report "$report"; then
+    fallback_snapshot
+    return 0
+  fi
+  printf '%s\n' "$report"
 }
 
 [[ $# -ge 2 ]] || usage
@@ -563,6 +609,7 @@ run_root="${2%/}"
 [[ -d "$run_root" ]] || fail "run root not found: $run_root"
 state_file="$run_root/progress.tsv"
 history_file="$run_root/progress-history.tsv"
+latest_file="$run_root/progress-latest.md"
 shift 2
 
 case "$command" in
@@ -574,5 +621,6 @@ case "$command" in
   mode) [[ $# -eq 1 ]] || usage; command_mode "$1" ;;
   replan) [[ $# -le 2 ]] || usage; command_replan "${1:-}" "${2:-}" ;;
   snapshot) command_snapshot "$@" ;;
+  report) [[ $# -eq 0 ]] || usage; command_report ;;
   *) usage ;;
 esac

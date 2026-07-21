@@ -63,6 +63,12 @@ when the remaining work honestly grew. State is durable across resume and stale
 Goal reconciliation, while a broken progress file falls back to `ETA
 unavailable` and never blocks the actual task.
 
+The renderer also keeps the latest three-line block in `progress-latest.md`.
+The execution protocol treats command output as evidence only and republishes
+the exact block as a separate chat message. After compaction or resume it uses
+`progress.sh report` to restore the visible block even when normal cadence
+suppression would apply.
+
 This output is a Markdown report in the task. Supergoal does not patch or extend
 the native Codex Goal row; that row keeps its own timer and controls.
 

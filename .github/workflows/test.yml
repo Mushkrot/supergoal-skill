@@ -21,3 +21,5 @@ jobs:
         run: bash scripts/validate-phase.sh templates/phase-goal.txt
       - name: Run progress contract
         run: bash tests/progress-reporting.sh
+      - name: Run transcript publication contract
+        run: bash tests/progress-transcript-contract.sh

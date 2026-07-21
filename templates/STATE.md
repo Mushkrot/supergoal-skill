@@ -86,6 +86,7 @@
 - Last progress report: —
 - Progress state: {{RUN_ROOT}}/progress.tsv
 - Progress history: {{RUN_ROOT}}/progress-history.tsv
+- Latest visible report: {{RUN_ROOT}}/progress-latest.md
 
 ## Engineering check status
 

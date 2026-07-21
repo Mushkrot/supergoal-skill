@@ -12,13 +12,14 @@ Use this reference when planning a Supergoal run, updating its Worksteps, emitti
 6. [Lifecycle integration](#lifecycle-integration)
 7. [Plan changes and migration](#plan-changes-and-migration)
 8. [Rendering contract](#rendering-contract)
-9. [Failure behavior](#failure-behavior)
+9. [Visible message publication](#visible-message-publication)
+10. [Failure behavior](#failure-behavior)
 
 ## Platform boundary
 
 The native Codex Goal row owns Goal status, its timer, and pause/resume/edit/clear controls. The supported Goal tools do not expose custom percentage, ETA, Workstep, or card-rendering fields. Do not patch Codex, call private UI APIs, emit ANSI/HTML color hacks, or claim that Supergoal modifies that row.
 
-Emit progress as compact Markdown in the current task. Keep the progress snapshot independent of the renderer so a future supported native metadata adapter can consume the same state. Chat output remains the fallback.
+Emit progress as compact Markdown in the current task. Keep the progress snapshot independent of the renderer so a future supported native metadata adapter can consume the same state. Chat output remains the fallback. Command stdout is not itself a visible progress message: the executor must publish the exact block as a separate assistant message.
 
 ## Progress model
 
@@ -44,7 +45,7 @@ Round only the displayed percentage. Keep calculations at full precision. A full
 
 ## Durable state
 
-Use `<run-root>/progress.tsv` as the machine-readable source of truth. Keep `<run-root>/progress-history.tsv` append-only. Mirror only the latest readable snapshot and important progress events into `STATE.md`; do not parse free-form `STATE.md` for normal calculations.
+Use `<run-root>/progress.tsv` as the machine-readable source of truth. Keep `<run-root>/progress-history.tsv` append-only. Persist the latest rendered three-line block in `<run-root>/progress-latest.md` so it can be re-emitted after context compaction or application resume. Mirror only the latest readable snapshot and important progress events into `STATE.md`; do not parse free-form `STATE.md` for normal calculations.
 
 The schema is tab-separated:
 
@@ -140,7 +141,10 @@ In the Workstep loop:
 2. call `milestone-done` only with an evidence reference;
 3. call `workstep-done` only after every milestone is verified;
 4. force event `workstep-done` and then continue automatically;
-5. run non-forced `snapshot` whenever control returns.
+5. run non-forced `snapshot` whenever control returns;
+6. when `snapshot` emits stdout, publish those exact three lines as a standalone assistant message. Never treat the tool-result rendering, a `STATE.md` update, or a prose summary as the visible progress message.
+
+After context compaction, automatic continuation, or application resume, run `progress.sh report <run-root>` before continuing. This bypasses cadence suppression, reads the durable latest state, and must be published as the first standalone progress message after the continuation.
 
 Set modes at recovery, waiting, audit, blocker, and completion transitions. Progress output is informational and never asks whether to continue.
 
@@ -181,6 +185,17 @@ Use a ten-cell Unicode bar and bold text. State markers must remain understandab
 - `🟩 complete`.
 
 Normalize and truncate only the displayed Workstep name; preserve the durable value. On replan, the third line may replace the normal status with `Plan rev 2: 8 → 10 Worksteps — <reason>`.
+
+## Visible message publication
+
+The publication boundary is explicit:
+
+1. capture the complete stdout from `snapshot` or `report`;
+2. if it is non-empty, send it unchanged in a separate assistant message containing only the three-line block;
+3. do not replace it with a sentence such as “progress is 67%”;
+4. after compaction/resume, use `report`, not a suppressed normal snapshot, and publish the returned block again.
+
+`progress-latest.md` is the durable handoff between the renderer and this publication step. It solves state recovery; it does not claim to modify the private native Goal UI.
 
 ## Failure behavior
 

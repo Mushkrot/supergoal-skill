@@ -54,7 +54,7 @@ Action: <native close|resume old run|continue investigation|block|start new run>
 
 ### `SUPERGOAL_PROGRESS`
 
-Print the helper output exactly when it emits a snapshot. Normal output is three lines:
+Print the helper output exactly when it emits a snapshot as a standalone assistant message. Normal output is three lines; collapsed tool output does not count as publication:
 
 ```markdown
 **🟦 SUPERGOAL PROGRESS**

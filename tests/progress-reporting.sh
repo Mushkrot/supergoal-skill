@@ -62,8 +62,13 @@ assert_contains "$output" '0%' 'initial percentage is zero'
 assert_contains "$output" '0/3 Worksteps' 'initial Workstep count is visible'
 assert_contains "$output" 'ETA **40m–1h 30m** *(low)*' 'initial ETA uses the planned range'
 assert_equals "$(printf '%s\n' "$output" | wc -l | tr -d ' ')" '3' 'normal snapshot has three lines'
+assert_file_contains "$run/progress-latest.md" 'SUPERGOAL PROGRESS' 'emitted snapshot is durably available for visible-message publication'
+assert_equals "$(wc -l < "$run/progress-latest.md" | tr -d ' ')" '3' 'latest report remains exactly three lines'
 output=$(progress_at 1001 snapshot "$run")
 assert_empty "$output" 'unchanged snapshot is suppressed before cadence'
+output=$(progress_at 1001 report "$run")
+assert_contains "$output" 'SUPERGOAL PROGRESS' 'report re-emits the latest state after compaction'
+assert_equals "$(printf '%s\n' "$output" | wc -l | tr -d ' ')" '3' 'report re-emission remains exactly three lines'
 
 # Evidence points change the signature before a Workstep is complete.
 progress_at 1000 workstep-start "$run" 1

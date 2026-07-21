@@ -239,6 +239,7 @@ Create:
 - `documentation-trace.md`;
 - `recallant-status.md`;
 - `progress.tsv` rendered from `templates/progress.tsv`;
+- `progress-latest.md` created by the first emitted snapshot;
 - optional `phase-position.md`;
 - one `phases/phase-N.md` per Workstep from `templates/phase-goal.txt`.
 
@@ -337,7 +338,7 @@ On success, write `Goal dispatch method: native`, set lifecycle state to `EXECUT
 
 Follow the rendered `PROTOCOL.md` for Workstep execution, requirement checks, deferred work, memory writeback, documentation, final audit, auto-commit, Recallant closeout, Project Phase footer, and recovery. Use `references/goal-format.md` for transcript blocks.
 
-At every return of control, ask the pinned run `progress.sh` for a non-forced snapshot. Force snapshots at Workstep completion, recovery/replan transitions, audit boundaries, genuine blockage, and completion. Follow `references/progress-reporting.md` for cadence, ETA, migration, and fallback rules.
+At every return of control, ask the pinned run `progress.sh` for a non-forced snapshot. If it emits output, publish those exact three lines as a separate assistant message; command stdout, `STATE.md`, or a prose percentage summary does not count. Force snapshots at Workstep completion, recovery/replan transitions, audit boundaries, genuine blockage, and completion. After context compaction, automatic continuation, or application resume, run `progress.sh report <run-root>` and publish that block first. Follow `references/progress-reporting.md` for cadence, ETA, migration, durable handoff, and fallback rules.
 
 When the user voluntarily sends a change during execution, incorporate it at the next safe Workstep boundary, update the requirement contract and affected specs, re-run integrity checks, and continue automatically. Pause only when the user explicitly asks to pause or stop.
 
